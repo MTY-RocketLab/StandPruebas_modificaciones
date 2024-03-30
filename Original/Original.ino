@@ -5,7 +5,7 @@
 #include <BluetoothSerial.h>
 
 //timer
-hw_timer_t * timer = NULL;
+//hw_timer_t * timer = NULL;
 
 #define SD_MISO_PIN 19
 #define SD_MOSI_PIN 23
