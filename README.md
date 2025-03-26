@@ -38,7 +38,7 @@ however, I am not sure if every character means 1 byte therefore I am hesitant i
 ## Adding the pressure sensor
 Currently there isnt a dirrect presure sensor which was a change that has been set to be made. 
 
-Therefore we added certain functions to incorporate the sensor however a formula to get the exact PSI of the rocket is yet to be made.
+Therefore we added certain functions to incorporate the sensor however a formula to get the exact PSI of the rocket is yet to be made. However, we decided to use a previous code as a reference to theoretical values to then make it simpler and later make changes for actual usefull presure sensor.
 
 ## Livestyle changes to the txt file
 The main changes in this were insted of giving a array based on 
@@ -49,5 +49,6 @@ The main changes in this were insted of giving a array based on
 we tried to transform it into a more comprehensive file following this format 
 
 > Time:xx, Force:xx Presure:xx (all values would be a string)
+
 
 
