@@ -41,8 +41,6 @@ int32_t CalibrationValue;
 uint32_t KnownWeight;
 float PressureValue; //valor del sensor como float (POR DEFINIR)
 
-
-
 char incomingChar;
 static String Message = "";
 String Calibrate = "calibrate";
@@ -317,3 +315,4 @@ float readPressureSensor() {
   return pressure;
 }
 
+//FALTA DEFINIR PRESURE COMO GLOBAL
