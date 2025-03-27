@@ -30,7 +30,7 @@ uint8_t Safe_Pin = 15;
 const uint8_t LOADCELL_DOUT_PIN = 32;  //Data pin for hx711
 const uint8_t LOADCELL_SCK_PIN = 33;   //sck pin for hx711
 //cambio(presion)
-const uint8_t PRESSURE_SENSOR_PIN = 34; //falta definir pin
+const uint8_t PRESSURE_SENSOR_PIN = xx; //falta definir pin
 
 
 
@@ -243,6 +243,7 @@ void BluetoothRead(){
 
 void MeasureMode(){
   ForceMeasure();
+  PressureValue = readPressureSensor(); // Lectura del sensor de presión
   dataTransfer();
   instance = millis() - StartTime;
   dataStore();
@@ -251,6 +252,7 @@ void MeasureMode(){
 
 void launchMode(){
   ForceMeasure();
+  PressureValue = readPressureSensor(); // Lectura del sensor de presión
     if(SDSTATE){
       dataStore();
     }
@@ -278,7 +280,7 @@ void dataStore(){
     SerialBT.println("Force   Pressure    Time");
   }
   if (myFile) {
-    MATRIX data = [ForceMeasure, PresionMeasure, instance];
+    MATRIX data = [ForceValue, PressureValue, instance];
     myFile.print(data);
     //CHANGE TO A MATRIX WITH A TITLE AS A COLUMN THAT STATES WHAT NAME OF THE COLUMN the colum can be made with a static value as the previous
     
@@ -300,15 +302,18 @@ void ForceMeasure(){
   }
 }
 
-void PresionMeasure(){
-//jajajajajajaaja falta 
-/* Falta agregar esto d epresion y ver donde se tiene que pedir la funcion de presion + la de fuerza + la de instante y en que modos (lo de los modos preguntar a Lilly) */
-}
+
 //cambiar para mejor estructura (agregar el string del fuerza:, Tiempo:, Presion:)
 void dataTransfer(){
   
   SerialBT.print(Contador + ". Fuerza: " + string(ForceValue) + ", Pression: "+ string(PressureValue) + "tiempo: "+ string(nstance));
   Serial.print(Contador + ". Fuerza: " + string(ForceValue) + ", Pression: "+ string(PressureValue) + "tiempo: "+ string(nstance));
   Contador=++
+}
+float readPressureSensor() {
+  int sensorValue = analogRead(PRESSURE_SENSOR_PIN);
+  float voltage = sensorValue * (3.3 / 4095.0); // convertir valor leido a voltaje
+  float pressure = (voltage / 3.3) * 100; // 0-100 psi 
+  return pressure;
 }
 
