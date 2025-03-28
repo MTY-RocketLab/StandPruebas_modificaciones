@@ -14,7 +14,7 @@
 
 static String fileName = "";  /* Store file name static so after first change it wont be renamed again and 
 again and for the function to be called multiple times */
-static String firstTIMEcheck = ""; //to check if its the first time writing the SD down and put collum values and titles
+static bool firstTIMEcheck = true; //to check if its the first time writing the SD down and put collum values and titles
 static uint8_t Contador = 1; //contador para cuantos prints en la terminal
 
 BluetoothSerial SerialBT;
@@ -31,6 +31,7 @@ const uint8_t LOADCELL_DOUT_PIN = 32;  //Data pin for hx711
 const uint8_t LOADCELL_SCK_PIN = 33;   //sck pin for hx711
 //cambio(presion)
 const uint8_t PRESSURE_SENSOR_PIN = 34; //falta definir pin
+uint8_t FILE_RESET_Button = 22;  //es en un digital output pin
 
 
 
@@ -238,12 +239,13 @@ void BluetoothRead(){
     //Serial.println(Message);
   }
 }
-
+//ver si mover funciones que ponen nombre a el text file ponerlas en otro lado
 void MeasureMode(){
   ForceMeasure();
   PressureValue = readPressureSensor(); // Lectura del sensor de presión
   dataTransfer();
   instance = millis() - StartTime;
+  //segun yo es al reves  ]]]]]]]]]]]]]]]]]]]]]]]]]]] osea starttime-milis porq es final-inicial
   dataStore();
   
 }
@@ -261,6 +263,10 @@ void launchMode(){
 
 void dataStore(){
   //SD card must me < 32 gb and formated FAT32
+
+  if (digitalRead(FILE_RESET_Button)==true){// el pin corresponde al boton (ver si hay una forma de hacerlo sin tener que lanzar cohete)
+  fileName="";
+  }
   
   
   if (fileName == "") {  // Ask for file name only once due to the if and the static string
@@ -273,10 +279,11 @@ void dataStore(){
   }
 
   myFile = SD.open(fileName, FILE_APPEND); //part of code that just writes down info (SHOULDNT BE TOUCHED BY ME SINCE I DONT FULLY UNDERSTAND IT)
-  if (firstTIMEcheck=="") {
+  if (firstTIMEcheck==true) {
     Serial.println("First thing printed");
     SerialBT.println("First thing printed");
     myFile.print("Force,Pressure,Time");
+    firstTIMEcheck= !firstTIMEcheck
   }
   if (myFile) {
     
