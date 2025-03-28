@@ -283,7 +283,7 @@ void dataStore(){
     Serial.println("First thing printed");
     SerialBT.println("First thing printed");
     myFile.print("Force,Pressure,Time");
-    firstTIMEcheck= !firstTIMEcheck
+    firstTIMEcheck= !firstTIMEcheck;
   }
   if (myFile) {
     
