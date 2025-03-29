@@ -90,7 +90,7 @@ void setup() {
     SDSTATE = true;
   }
   
-  SerialBT.print("ready to go \n 'calibrate' to calibrate scale \n 'set' to use known calibration value \n 'measure' to test without launching \n 'launch' to launch \n stop while running to stop \n CASE SENSITIVE \n");
+  SerialBT.print("Before anything 'newfile' to set the name that will be recorded in the SD if already set then skip \n ready to go \n 'calibrate' to calibrate scale \n 'set' to use known calibration value \n 'measure' to test without launching \n 'launch' to launch \n stop while running to stop \n  CASE SENSITIVE \n");
   
 //  timer = timerBegin(0, 800, true);             // timer 0, prescalar: 80, UP counting
 //  timerAttachInterrupt(timer, &loop, true);   // Attach interrupt
@@ -102,9 +102,27 @@ void loop(){
   Message = "";
   BluetoothRead();
   delay(50);
+  //case 0 checker name +state checker
+  if (state != 0 && fileName == "") {
+    state = 0;  
 //FROM PAST PRESURE THE DELAY USED TO BE 100 ms Current is 50
   switch(state){
-
+    case 0: 
+      if (!SDSTATE) {
+        SerialBT.print("SD not detected, please insert before continuing. \n")
+        return
+      }
+      if (filename == "") {
+        if (Message != newfile){
+          SerialBT.print("Enter namefile before any commands. \n");
+          return;
+        }
+        SerialBT.print("Ente file name: ");
+        while (!SerialBT.available() ) {}
+        fileName.trim();
+        fileName = "/" + fileName + ".txt";
+        SerialBT.print("File name set: " + fileName + "\n");
+      }
     case 1:
 
       if (Message == Measure) {
@@ -163,7 +181,7 @@ void loop(){
         while(!SerialBT.available()){}
 
         delay(500);
-
+      }
         BluetoothRead(); 
         KnownWeight = atoi(Message.c_str());
         SerialBT.print(KnownWeight);
@@ -243,10 +261,11 @@ void BluetoothRead(){
 void MeasureMode(){
   ForceMeasure();
   PressureValue = readPressureSensor(); // Lectura del sensor de presión
+  dataStore();
   dataTransfer();
   instance = millis() - StartTime;
   //segun yo es al reves  ]]]]]]]]]]]]]]]]]]]]]]]]]]] osea starttime-milis porq es final-inicial y con su formula da un tiempo negativo, alamejor el q falta para caer?
-  dataStore();
+  
   
 }
 
@@ -264,19 +283,7 @@ void launchMode(){
 void dataStore(){
   //SD card must me < 32 gb and formated FAT32
 
-  if (digitalRead(FILE_RESET_Button)==true){// el pin corresponde al boton (ver si hay una forma de hacerlo sin tener que lanzar cohete)
-  fileName="";
-  }
-  
-  
-  if (fileName == "") {  // Ask for file name only once due to the if and the static string
-    SerialBT.print("Enter file name: ");
-    while (!SerialBT.available()) {}  /* When a input is added a \n will be placed which will set a limit to the inputed "read" code
-    as seen in the next line of code*/
-    fileName = SerialBT.readStringUntil('\n'); 
-    fileName.trim(); // I dont like spaces in names
-    fileName = "/" + fileName + ".txt";  // To format the file as a file path
-  }
+
 
   myFile = SD.open(fileName, FILE_APPEND); //part of code that just writes down info (SHOULDNT BE TOUCHED BY ME SINCE I DONT FULLY UNDERSTAND IT)
   if (firstTIMEcheck==true) {
@@ -316,8 +323,8 @@ void ForceMeasure(){
 //cambiar para mejor estructura (agregar el string del fuerza:, Tiempo:, Presion:)
 void dataTransfer(){
   
-  SerialBT.print(String(Contador) + ". Fuerza: " + String(ForceValue) + ", Pression: "+ String(PressureValue) + "tiempo: "+ String(instance));
-  Serial.print(String(Contador) + ". Fuerza: " + String(ForceValue) + ", Pression: "+ String(PressureValue) + "tiempo: "+ String(instance));
+  SerialBT.print(String(Contador) + ". Force: " + String(ForceValue) + ", Pressure: "+ String(PressureValue) + " time: "+ String(instance));
+  Serial.print(String(Contador) + ". Fuerza: " + String(ForceValue) + ", Pression: "+ String(PressureValue) + "time: "+ String(instance));
   Contador++;
 }
 float readPressureSensor() {
