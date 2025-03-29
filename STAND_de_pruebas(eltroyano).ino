@@ -30,7 +30,7 @@ uint8_t Safe_Pin = 15;
 const uint8_t LOADCELL_DOUT_PIN = 32;  //Data pin for hx711
 const uint8_t LOADCELL_SCK_PIN = 33;   //sck pin for hx711
 //cambio(presion)
-const uint8_t PRESSURE_SENSOR_PIN = 34; //falta definir pin
+const uint8_t PRESSURE_SENSOR_PIN = 13; //falta definir pin
 uint8_t FILE_RESET_Button = 22;  //es en un digital output pin
 
 
@@ -245,7 +245,7 @@ void MeasureMode(){
   PressureValue = readPressureSensor(); // Lectura del sensor de presión
   dataTransfer();
   instance = millis() - StartTime;
-  //segun yo es al reves  ]]]]]]]]]]]]]]]]]]]]]]]]]]] osea starttime-milis porq es final-inicial
+  //segun yo es al reves  ]]]]]]]]]]]]]]]]]]]]]]]]]]] osea starttime-milis porq es final-inicial y con su formula da un tiempo negativo, alamejor el q falta para caer?
   dataStore();
   
 }
@@ -257,7 +257,7 @@ void launchMode(){
       dataStore();
     }
     dataTransfer();
-    instance = StartTime - millis();
+    instance =  millis()-StartTime ;
   }
 
 
