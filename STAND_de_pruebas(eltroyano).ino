@@ -1,4 +1,3 @@
-
 #include <HX711.h>
 #include <SD.h>
 #include <SPI.h>
@@ -33,8 +32,6 @@ const uint8_t LOADCELL_SCK_PIN = 33;   //sck pin for hx711
 const uint8_t PRESSURE_SENSOR_PIN = 13; //falta definir pin
 uint8_t FILE_RESET_Button = 22;  //es en un digital output pin
 
-
-
 float ForceValue; 
 uint32_t StartTime = millis();
 uint32_t instance;
@@ -49,20 +46,15 @@ String Launch = "launch";
 String SetScale = "set";
 String Measure = "measure";
 String EndStop = "stop";
-
+String NewFile = "newfile";
 
 bool SDSTATE;
 bool SD_Activated;
 uint8_t state = 0;
 
-//SPIClass vspi = SPIClass(VSPI);
-
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
-  
   SerialBT.begin("Test Stand");
-  //vspi.begin(SD_SCK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
 
   pinMode(SD_CS_PIN, OUTPUT);
   pinMode(LaunchPin, OUTPUT);
@@ -75,10 +67,7 @@ void setup() {
   scale.tare();
   digitalWrite(SD_CS_PIN, HIGH);
 
-
-  
-
- while (!SerialBT.available()) {
+  while (!SerialBT.available()) {
   }
 
   if (!SD.begin(SD_CS_PIN)) {
@@ -91,54 +80,49 @@ void setup() {
   }
   
   SerialBT.print("Before anything 'newfile' to set the name that will be recorded in the SD if already set then skip \n ready to go \n 'calibrate' to calibrate scale \n 'set' to use known calibration value \n 'measure' to test without launching \n 'launch' to launch \n stop while running to stop \n  CASE SENSITIVE \n");
-  
-//  timer = timerBegin(0, 800, true);             // timer 0, prescalar: 80, UP counting
-//  timerAttachInterrupt(timer, &loop, true);   // Attach interrupt
-//  timerAlarmWrite(timer, 100000, true);     // Match value= 1000000 for 1 sec. delay.
-//  timerAlarmEnable(timer);  
 }
 
 void loop(){
   Message = "";
   BluetoothRead();
   delay(50);
-  //case 0 checker name +state checker
+  
   if (state != 0 && fileName == "") {
     state = 0;  
-//FROM PAST PRESURE THE DELAY USED TO BE 100 ms Current is 50
+  }
+
   switch(state){
     case 0: 
       if (!SDSTATE) {
-        SerialBT.print("SD not detected, please insert before continuing. \n")
-        return
+        SerialBT.print("SD not detected, please insert before continuing. \n");
+        break;
       }
-      if (filename == "") {
-        if (Message != newfile){
+      if (fileName == "") {
+        if (Message != "newfile"){
           SerialBT.print("Enter namefile before any commands. \n");
-          return;
+          break;
         }
-        SerialBT.print("Ente file name: ");
-        while (!SerialBT.available() ) {}
+        SerialBT.print("Enter file name: ");
+        while (!SerialBT.available()) {}
+        fileName = SerialBT.readStringUntil('\n');
         fileName.trim();
         fileName = "/" + fileName + ".txt";
         SerialBT.print("File name set: " + fileName + "\n");
       }
+      break;
+      
     case 1:
-
       if (Message == Measure) {
         scale.set_scale(CalibrationValue);
         Message = "";
-
         while(Message != EndStop){
           BluetoothRead();
           MeasureMode();
         }
       }
       break;
-  
-
+      
     case 2:
-
       if(Message == Launch){
         scale.set_scale(CalibrationValue);
         if(SDSTATE == true){
@@ -146,12 +130,10 @@ void loop(){
             SerialBT.print(10 - i);
             SerialBT.print("\n");
             delay(1000);
-            //measure
           
             if(Message == EndStop){
               SerialBT.print("ABORT\n");
               break;
-          
             }
           }
 
@@ -163,25 +145,17 @@ void loop(){
             launchMode();
           }
         }
-      
         else{
           SerialBT.print("ABORT\n");
-      }
+        }
       }
       break;
-    
-
+      
     default:
       if(Message == Calibrate) {
-        Serial.println("yes");
-        Message = "";
         SerialBT.print("Enter value of known weight in grams: \n");
-
-
         while(!SerialBT.available()){}
-
         delay(500);
-      }
         BluetoothRead(); 
         KnownWeight = atoi(Message.c_str());
         SerialBT.print(KnownWeight);
@@ -190,18 +164,12 @@ void loop(){
         if(scale.is_ready()){
           scale.set_scale();
           SerialBT.print("Remove Weight from scale\n");
-          
           delay(3000);
-
           SerialBT.print("Now Taring\n");
-          
           scale.tare();
-
           SerialBT.print("Tare Done\n");
-        
           delay(1000);
           SerialBT.print("Place Known weight on scale\n");
-          
           delay(5000);
           SerialBT.print("Now Measuring\n");
           delay(200);
@@ -212,38 +180,28 @@ void loop(){
           SerialBT.print(CalibrationValue);
           SerialBT.print("\n");
         }
-
-    }
-
-    else if(Message == SetScale){
-      Message = "";
-      SerialBT.print("Enter Known Calibration Value: \n");
-      
-
-      while(!SerialBT.available()){
-
       }
-      delay(500);
-
-      BluetoothRead();
-      CalibrationValue = atoi(Message.c_str());
-      SerialBT.print(CalibrationValue);
-      SerialBT.print("\n");
-    }
-
-    break;
-    
+      else if(Message == SetScale){
+        SerialBT.print("Enter Known Calibration Value: \n");
+        while(!SerialBT.available()){}
+        delay(500);
+        BluetoothRead();
+        CalibrationValue = atoi(Message.c_str());
+        SerialBT.print(CalibrationValue);
+        SerialBT.print("\n");
+      }
+      break;
   }
   
   if (state == 0) {
     if(digitalRead(Safe_Pin) == HIGH){
-        SerialBT.print("Safe Pin Removed\n");
-        state++;
-       }
+      SerialBT.print("Safe Pin Removed\n");
+      state++;
     }
+  }
 
   if (state == 1) {
-    if (digitalRead(ContinuityPin) == 1) {
+    if (digitalRead(ContinuityPin) == HIGH) {
       SerialBT.print("Continuity on charge\n");
       state++;
     }
@@ -253,64 +211,45 @@ void loop(){
 void BluetoothRead(){
   while(SerialBT.available()) {
     Message = SerialBT.readStringUntil('\n');
-    Message.remove(Message.length() - 1,1);
-    //Serial.println(Message);
+    Message.trim();
   }
 }
-//ver si mover funciones que ponen nombre a el text file ponerlas en otro lado
+
 void MeasureMode(){
   ForceMeasure();
-  PressureValue = readPressureSensor(); // Lectura del sensor de presión
+  PressureValue = readPressureSensor();
   dataStore();
   dataTransfer();
   instance = millis() - StartTime;
-  //segun yo es al reves  ]]]]]]]]]]]]]]]]]]]]]]]]]]] osea starttime-milis porq es final-inicial y con su formula da un tiempo negativo, alamejor el q falta para caer?
-  
-  
 }
 
 void launchMode(){
   ForceMeasure();
-  PressureValue = readPressureSensor(); // Lectura del sensor de presión
-    if(SDSTATE){
-      dataStore();
-    }
-    dataTransfer();
-    instance =  millis()-StartTime ;
+  PressureValue = readPressureSensor();
+  if(SDSTATE){
+    dataStore();
   }
-
+  dataTransfer();
+  instance = millis() - StartTime;
+}
 
 void dataStore(){
-  //SD card must me < 32 gb and formated FAT32
-
-
-
-  myFile = SD.open(fileName, FILE_APPEND); //part of code that just writes down info (SHOULDNT BE TOUCHED BY ME SINCE I DONT FULLY UNDERSTAND IT)
+  myFile = SD.open(fileName, FILE_APPEND);
   if (firstTIMEcheck==true) {
     Serial.println("First thing printed");
     SerialBT.println("First thing printed");
-    myFile.print("Force,Pressure,Time");
+    myFile.println("Force,Pressure,Time");
     firstTIMEcheck= !firstTIMEcheck;
   }
   if (myFile) {
-    
-    
     String data = String(ForceValue)+","+String(PressureValue)+","+String(instance);
-    myFile.print(data);
-  
-    //CHANGE TO A MATRIX WITH A TITLE AS A COLUMN THAT STATES WHAT NAME OF THE COLUMN the colum can be made with a static value as the previous
-    
-/*  The snipet in coment should be more effcient as a writer, since it writes in binaries but due to knowledge constraints 
-on bytes the first part in the argument makes the arduino String into a c++ string since it's the only one that works 
-for the .write and the min(31, data.lenght())) basically ensures that if more than 31 bytes are writen for only the lenght of 31 bytes to be accepted,
-however, I am not sure if every character means 1 byte therefore I am hesitant in using this however it should be more optimised*/
-    //myFile.write(data.c_str(), min(31, data.length()));  // Write max 31 bytes (Normally the last byte isnt a full byte)
+    myFile.println(data);
     myFile.close();
   } else {
     SerialBT.print("SD ERROR;\n");
     SDSTATE = false;
   }
-  }
+}
 
 void ForceMeasure(){
   if(scale.is_ready()){
@@ -318,20 +257,15 @@ void ForceMeasure(){
   }
 }
 
-
-
-//cambiar para mejor estructura (agregar el string del fuerza:, Tiempo:, Presion:)
 void dataTransfer(){
-  
-  SerialBT.print(String(Contador) + ". Force: " + String(ForceValue) + ", Pressure: "+ String(PressureValue) + " time: "+ String(instance));
-  Serial.print(String(Contador) + ". Fuerza: " + String(ForceValue) + ", Pression: "+ String(PressureValue) + "time: "+ String(instance));
+  SerialBT.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
+  Serial.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
   Contador++;
 }
+
 float readPressureSensor() {
   int sensorValue = analogRead(PRESSURE_SENSOR_PIN);
-  float voltage = sensorValue * (3.3 / 4095.0); // convertir valor leido a voltaje
-  float pressure = (voltage / 3.3) * 100; // 0-100 psi 
+  float voltage = sensorValue * (3.3 / 4095.0);
+  float pressure = (voltage / 3.3) * 100;
   return pressure;
 }
-
-//FALTA DEFINIR PRESURE COMO GLOBAL
