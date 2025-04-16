@@ -54,7 +54,7 @@ bool SD_Activated;
 uint8_t state = 0;
 
 void BluetoothRead(){
-  while(SerialBT.available()) {
+  while(SerialBT.av,failable()) {
     Message = SerialBT.readStringUntil('\n');
     Message.trim();
   }
