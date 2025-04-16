@@ -1,4 +1,4 @@
-#include <HX711.h>
+ #include <HX711.h>
 #include <SD.h>
 #include <SPI.h>
 #include <BluetoothSerial.h>
@@ -47,10 +47,90 @@ String SetScale = "set";
 String Measure = "measure";
 String EndStop = "stop";
 String NewFile = "newfile";
-
+//String to be able to rename
+String Rename = "rename"
 bool SDSTATE;
 bool SD_Activated;
 uint8_t state = 0;
+
+void BluetoothRead(){
+  while(SerialBT.available()) {
+    Message = SerialBT.readStringUntil('\n');
+    Message.trim();
+  }
+}
+
+void MeasureMode(){
+  ForceMeasure();
+  PressureValue = readPressureSensor();
+  dataStore();
+  dataTransfer();
+  instance = millis() - StartTime;
+}
+
+void launchMode(){
+  ForceMeasure();
+  PressureValue = readPressureSensor();
+  if(SDSTATE){
+    dataStore();
+  }
+  dataTransfer();
+  instance = millis() - StartTime;
+}
+
+void dataStore(){
+  myFile = SD.open(fileName, FILE_APPEND);
+  if (firstTIMEcheck==true) {
+    Serial.println("First thing printed");
+    SerialBT.println("First thing printed");
+    myFile.println("Force,Pressure,Time");
+    firstTIMEcheck= !firstTIMEcheck;
+  }
+  if (myFile) {
+    String data = String(ForceValue)+","+String(PressureValue)+","+String(instance);
+    myFile.println(data);
+    myFile.close();
+  } else {
+    SerialBT.print("SD ERROR;\n");
+    SDSTATE = false;
+  }
+}
+
+void ForceMeasure(){
+  if(scale.is_ready()){
+    ForceValue = scale.get_units()/1000;
+  }
+}
+
+void dataTransfer(){
+  SerialBT.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
+  Serial.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
+  Contador++;
+}
+
+float readPressureSensor() {
+  int sensorValue = analogRead(PRESSURE_SENSOR_PIN);
+  float voltage = sensorValue * (3.3 / 4095.0);
+  float pressure = (voltage / 3.3) * 100;
+  return pressure;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void setup() {
   Serial.begin(9600);
@@ -87,29 +167,35 @@ void loop(){
   BluetoothRead();
   delay(50);
   
-  if (state != 0 && fileName == "") {
-    state = 0;  
+
   }
+// For cases where we need to reset the filename and set to state=0 
 
   switch(state){
     case 0: 
-      if (!SDSTATE) {
-        SerialBT.print("SD not detected, please insert before continuing. \n");
-        break;
-      }
-      if (fileName == "") {
-        if (Message != "newfile"){
-          SerialBT.print("Enter namefile before any commands. \n");
-          break;
-        }
-        SerialBT.print("Enter file name: ");
-        while (!SerialBT.available()) {}
-        fileName = SerialBT.readStringUntil('\n');
-        fileName.trim();
-        fileName = "/" + fileName + ".txt";
-        SerialBT.print("File name set: " + fileName + "\n");
-      }
-      break;
+  if (!SDSTATE) {
+    SerialBT.print("SD not detected, please insert before continuing. \n");
+    break;
+  }
+
+  if (fileName == "") { // Only if no filename exists
+    SerialBT.print("Send 'newfile' to set filename \n");
+    
+    while (!SerialBT.available()) { 
+      delay(100);  // Prevents excessive message flooding
+    }
+
+    String tempFileName = SerialBT.readStringUntil('\n');
+    tempFileName.trim();
+    if (tempFileName.length() > 0) {  // Ensure a valid name was entered
+      fileName = "/" + tempFileName + ".txt";
+      SerialBT.print("File name set: " + fileName + "\n");
+    }
+  }
+  break;
+/* agrege el caso 0 para nombrar pero el codigo original forzaba dado a un numbero 0 de state a empezar con la calibracion o el set
+ posibles soluciones son (nuevo case posterior a el case 0 o forzar al state despues de el state 0 a transformarse en 4 o otro y 
+ despues regresar a un state previo.) tambien falta agregar un reset para el textfile*/
       
     case 1:
       if (Message == Measure) {
@@ -117,11 +203,15 @@ void loop(){
         Message = "";
         while(Message != EndStop){
           BluetoothRead();
-          MeasureMode();
+          MeasureMode();  //ONLY BT
+          /*if(Message == EndStop){
+              SerialBT.print("ABORT\n");
+              break;*/ //VER EL USO DE ESTO PARA PARAR EL MEASURE MODE
+            }
         }
       }
       break;
-      
+      //para esta parte ya deberia de haber estado calibrada
     case 2:
       if(Message == Launch){
         scale.set_scale(CalibrationValue);
@@ -141,8 +231,8 @@ void loop(){
           delay(1000);
           Message = "";
           while(Message != EndStop) {
-            BluetoothRead();
-            launchMode();
+            BluetoothRead(); 
+            launchMode();// SD PLUS BT.
           }
         }
         else{
@@ -208,64 +298,3 @@ void loop(){
   } 
 }
 
-void BluetoothRead(){
-  while(SerialBT.available()) {
-    Message = SerialBT.readStringUntil('\n');
-    Message.trim();
-  }
-}
-
-void MeasureMode(){
-  ForceMeasure();
-  PressureValue = readPressureSensor();
-  dataStore();
-  dataTransfer();
-  instance = millis() - StartTime;
-}
-
-void launchMode(){
-  ForceMeasure();
-  PressureValue = readPressureSensor();
-  if(SDSTATE){
-    dataStore();
-  }
-  dataTransfer();
-  instance = millis() - StartTime;
-}
-
-void dataStore(){
-  myFile = SD.open(fileName, FILE_APPEND);
-  if (firstTIMEcheck==true) {
-    Serial.println("First thing printed");
-    SerialBT.println("First thing printed");
-    myFile.println("Force,Pressure,Time");
-    firstTIMEcheck= !firstTIMEcheck;
-  }
-  if (myFile) {
-    String data = String(ForceValue)+","+String(PressureValue)+","+String(instance);
-    myFile.println(data);
-    myFile.close();
-  } else {
-    SerialBT.print("SD ERROR;\n");
-    SDSTATE = false;
-  }
-}
-
-void ForceMeasure(){
-  if(scale.is_ready()){
-    ForceValue = scale.get_units()/1000;
-  }
-}
-
-void dataTransfer(){
-  SerialBT.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
-  Serial.print(String(Contador) + ". F: " + String(ForceValue) + ", PSI: "+ String(PressureValue) + " T: "+ String(instance) + "\n");
-  Contador++;
-}
-
-float readPressureSensor() {
-  int sensorValue = analogRead(PRESSURE_SENSOR_PIN);
-  float voltage = sensorValue * (3.3 / 4095.0);
-  float pressure = (voltage / 3.3) * 100;
-  return pressure;
-}

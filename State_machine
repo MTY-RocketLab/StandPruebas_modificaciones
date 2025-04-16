@@ -1,0 +1,7 @@
+#indef State_machine.h
+#define State_machine
+#include <HX711.h>
+#include <SD.h>
+#include <SPI.h>
+#include <BluetoothSerial.h>
+#include STATE.h
