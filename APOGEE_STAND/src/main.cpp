@@ -1,7 +1,22 @@
 #include <Arduino.h>
 #include "STATE.h"
+#define SD_MISO_PIN 19
+#define SD_MOSI_PIN 23
+#define SD_SCK_PIN 18
+#define SD_CS_PIN 5
 
 State state = NAME;
+static String fileName="";
+static bool firstTIMEcheck= true;
+static uint8_t contador =1;
+
+BluetoothSerial SerialBT;
+HX711 scale;
+File myFile;
+char incomingChar;
+static String Message="";
+bool SDSTATE;
+bool SD_Activated;
 
 void BluetoothRead(){
   while(SerialBT.av,failable()) {
@@ -150,6 +165,8 @@ void loop() {
       break;
     case LAUNCH:
       break;
+    case RENAME:
+        break;
     case STOP:
       break;
   }

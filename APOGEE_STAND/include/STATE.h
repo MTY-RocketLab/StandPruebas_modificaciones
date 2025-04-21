@@ -6,6 +6,7 @@ enum State {
     SETSCALE=3,
     MEASURE=4,
     LAUNCH=5,
+    RENAME=6,
     STOP=8 
 }
 #endif
